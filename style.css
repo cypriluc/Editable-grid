@@ -1,0 +1,22 @@
+.areaBorder {
+  stroke: gray;
+  stroke-width: 2px;
+  fill: url(#grid);
+}
+
+.areaGridLines {
+  stroke: gray;
+  stroke-width: 0.5px;
+  fill: none;
+}
+
+.areaPoint {
+  fill: #f7f7f9;
+  stroke: gray;
+  stroke-width: 2px;
+  cursor: move;
+}
+
+.areaPoint:hover {
+  fill: gray;
+}
