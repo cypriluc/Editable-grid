@@ -14,10 +14,13 @@
   fill: #f7f7f9;
   stroke: gray;
   stroke-width: 2px;
-  cursor: move;
 }
 
 .controlCircle:hover {
+  fill: gray;
+}
+
+.controlCircle:active {
   fill: gray;
 }
 

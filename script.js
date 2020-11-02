@@ -1,7 +1,7 @@
 // initialize variables
 const pointRadius = 6;
 
-let gridDensity = 10;
+let gridDensity = 20;
 
 let borderCoordinates = {
   x1: 100,
@@ -23,8 +23,15 @@ let controlPoints = [
   controlPoint3,
 ];
 
+let currentCoordinates = {};
+let pointCoordinates = {};
+let activePointId = "";
+
 // create default svg with initial values
-let areaDefinitionSvg = d3.select("#areaDefinitionSvg");
+const areaDefinitionSvg = d3.select("#areaDefinitionSvg");
+const area = areaDefinitionSvg.node();
+const svgRect = area.getBoundingClientRect();
+
 let g = areaDefinitionSvg.append("g");
 
 let pattern = g
@@ -64,48 +71,83 @@ let circle3 = d3.select("#circle3").node();
 
 let circles = [circle0, circle1, circle2, circle3];
 
-// define function to translate coordinates from DOM to svg
-let screenToSvgCoords = function (svg, event) {
-  let svgRect = svg.getBoundingClientRect();
+// add event listener mousedown to control circles
+circles.forEach(function (circle) {
+  circle.addEventListener("mousedown", function (event) {
+    // make point coordinates equal to center of targeted event
+    let pointX = event.target.getAttribute("cx");
+    let pointY = event.target.getAttribute("cy");
+    pointCoordinates = {
+      X: pointX,
+      Y: pointY,
+    };
+
+    activePointId = event.target.id;
+
+    document.addEventListener("mousemove", mousemove);
+    document.addEventListener("mouseup", mouseup);
+  });
+});
+
+// define mousemove function
+function mousemove(event) {
+  let mouseX = screenToSvgCoords(event).X;
+  let mouseY = screenToSvgCoords(event).Y;
+
+  let currentCoordinates = {
+    X: mouseX,
+    Y: mouseY,
+  };
+
+  // if point coordinates and current coordinates distance is bigger then grid field (/half of it?) -> update point coordinates
+  let diffX = Math.abs(pointCoordinates.X - currentCoordinates.X);
+  let diffY = Math.abs(pointCoordinates.Y - currentCoordinates.Y);
+
+  if (diffX >= gridDensity / 2 || diffY >= gridDensity / 2) {
+    pointCoordinates = {
+      X: Math.round(currentCoordinates.X / gridDensity) * gridDensity,
+      Y: Math.round(currentCoordinates.Y / gridDensity) * gridDensity,
+    };
+    updateGrid(pointCoordinates.X, pointCoordinates.Y);
+  }
+}
+
+// define mouseup function
+function mouseup() {
+  currentCoordinates = {};
+  pointCoordinates = {};
+  activePointId = "";
+  document.removeEventListener("mousemove", mousemove);
+  document.removeEventListener("mouseup", mouseup);
+}
+
+// define screenToSvgCoords function to translate coordinates from DOM to svg
+function screenToSvgCoords(event) {
   let x = event.clientX - svgRect.x;
   let y = event.clientY - svgRect.y;
   return {
     X: x,
     Y: y,
   };
-};
+}
 
-// add event listeners mousedown to control circles
-circles.forEach(function (circle) {
-  circle.addEventListener("mousedown", function () {
-    document.addEventListener("mousemove", mousemove);
-    document.addEventListener("mouseup", mouseup);
-  });
-});
-
-let mousemove = function (event) {
-  document.removeEventListener("mouseup", mouseup);
-
-  let area = areaDefinitionSvg.node();
-
-  let mouseX = screenToSvgCoords(area, event).X;
-  let mouseY = screenToSvgCoords(area, event).Y;
-
+// define updateGrid function -> update variable values and redraw grid
+function updateGrid(x, y) {
   // update border coordinates
-  if (event.target.id === "circle0") {
-    borderCoordinates.x1 = mouseX;
-    borderCoordinates.y1 = mouseY;
-  } else if (event.target.id === "circle1") {
-    borderCoordinates.x2 = mouseX;
-    borderCoordinates.y1 = mouseY;
-  } else if (event.target.id === "circle2") {
-    borderCoordinates.x2 = mouseX;
-    borderCoordinates.y2 = mouseY;
-  } else if (event.target.id === "circle3") {
-    borderCoordinates.x1 = mouseX;
-    borderCoordinates.y2 = mouseY;
+  if (activePointId === "circle0") {
+    borderCoordinates.x1 = x;
+    borderCoordinates.y1 = y;
+  } else if (activePointId === "circle1") {
+    borderCoordinates.x2 = x;
+    borderCoordinates.y1 = y;
+  } else if (activePointId === "circle2") {
+    borderCoordinates.x2 = x;
+    borderCoordinates.y2 = y;
+  } else if (activePointId === "circle3") {
+    borderCoordinates.x1 = x;
+    borderCoordinates.y2 = y;
   } else {
-    console.log("invalid event target: " + event.target.id);
+    console.log("Error: point not selected");
   }
 
   // update control point coordinates
@@ -127,11 +169,4 @@ let mousemove = function (event) {
     circle.setAttribute("cx", controlPoints[index][0]);
     circle.setAttribute("cy", controlPoints[index][1]);
   });
-
-  document.addEventListener("mouseup", mouseup);
-};
-
-let mouseup = function (event) {
-  document.removeEventListener("mousemove", mousemove);
-  document.removeEventListener("mouseup", mouseup);
-};
+}
