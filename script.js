@@ -1,7 +1,7 @@
 // initialize variables
 const pointRadius = 6;
 
-let gridDensity = 20;
+let gridDensity = 10;
 
 let borderCoordinates = {
   x1: 100,
@@ -39,6 +39,8 @@ let pattern = g
   .attr("id", "grid")
   .attr("width", gridDensity)
   .attr("height", gridDensity)
+  .attr("x", controlPoint0[0])
+  .attr("y", controlPoint0[1])
   .attr("patternUnits", "userSpaceOnUse");
 
 let gridPath = pattern
@@ -71,9 +73,13 @@ let circle3 = d3.select("#circle3").node();
 
 let circles = [circle0, circle1, circle2, circle3];
 
+// add wheel event listener
+document.addEventListener("wheel", changeGridDensity);
+
 // add event listener mousedown to control circles
 circles.forEach(function (circle) {
   circle.addEventListener("mousedown", function (event) {
+    document.removeEventListener("wheel", changeGridDensity);
     // make point coordinates equal to center of targeted event
     let pointX = event.target.getAttribute("cx");
     let pointY = event.target.getAttribute("cy");
@@ -119,6 +125,7 @@ function mouseup() {
   activePointId = "";
   document.removeEventListener("mousemove", mousemove);
   document.removeEventListener("mouseup", mouseup);
+  document.addEventListener("wheel", changeGridDensity);
 }
 
 // define screenToSvgCoords function to translate coordinates from DOM to svg
@@ -164,9 +171,46 @@ function updateGrid(x, y) {
     `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
   );
 
+  //set grid origin
+  pattern.attr("x", controlPoint0[0]).attr("y", controlPoint0[1]);
+
   // redraw points
   circles.forEach(function (circle, index) {
     circle.setAttribute("cx", controlPoints[index][0]);
     circle.setAttribute("cy", controlPoints[index][1]);
   });
+}
+
+// define change Grid density function listening to wheel event
+function changeGridDensity(event) {
+  // increase or decrease grid density by 5 px, set bottom and top limits
+  if (event.deltaY < 0 && gridDensity > 5) {
+    gridDensity -= 5;
+  } else if (event.deltaY > 0 && gridDensity < 45) {
+    gridDensity += 5;
+  }
+  //  redraw grid
+  pattern
+    .attr("width", gridDensity)
+    .attr("height", gridDensity)
+    .attr("x", borderCoordinates.x1)
+    .attr("y", borderCoordinates.y1);
+  gridPath.attr("d", `M ${gridDensity} 0 L 0 0 0 ${gridDensity}`);
+
+  // adapt point2 coordinates to fit the grid
+  activePointId = "circle2";
+  let rx = (borderCoordinates.x2 - borderCoordinates.x1) % gridDensity;
+  let ry = (borderCoordinates.y2 - borderCoordinates.y1) % gridDensity;
+  if (rx < gridDensity / 2) {
+    pointCoordinates.X = borderCoordinates.x2 - rx;
+  } else {
+    pointCoordinates.X = borderCoordinates.x2 - rx + gridDensity;
+  }
+  if (ry < gridDensity / 2) {
+    pointCoordinates.Y = borderCoordinates.y2 - ry;
+  } else {
+    pointCoordinates.Y = borderCoordinates.y2 - ry + gridDensity;
+  }
+
+  updateGrid(pointCoordinates.X, pointCoordinates.Y);
 }

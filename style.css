@@ -23,8 +23,3 @@
 .controlCircle:active {
   fill: gray;
 }
-
-body {
-  padding: 0;
-  margin: 50px;
-}
