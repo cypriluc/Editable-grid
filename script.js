@@ -1,6 +1,6 @@
-let svgSelection = d3.select("#svgSelection");
+// initialize variables
+const pointRadius = 4;
 
-// variables default values
 let gridDensity = 10;
 
 let borderCoordinates = {
@@ -10,18 +10,22 @@ let borderCoordinates = {
   y2: 300,
 };
 
-const pointRadius = 4;
+// define 4 border points from borderCoordinates
+let controlPoint0 = [borderCoordinates.x1, borderCoordinates.y1];
+let controlPoint1 = [borderCoordinates.x2, borderCoordinates.y1];
+let controlPoint2 = [borderCoordinates.x2, borderCoordinates.y2];
+let controlPoint3 = [borderCoordinates.x1, borderCoordinates.y2];
 
-// 4 points from borderCoordinates
-let point0 = [borderCoordinates.x1, borderCoordinates.y1];
-let point1 = [borderCoordinates.x2, borderCoordinates.y1];
-let point2 = [borderCoordinates.x2, borderCoordinates.y2];
-let point3 = [borderCoordinates.x1, borderCoordinates.y2];
+let controlPoints = [
+  controlPoint0,
+  controlPoint1,
+  controlPoint2,
+  controlPoint3,
+];
 
-let controlPoints = [point0, point1, point2, point3];
-
-//svg default content
-let g = svgSelection.append("g");
+// create default svg with initial values
+let areaDefinitionSvg = d3.select("#areaDefinitionSvg");
+let g = areaDefinitionSvg.append("g");
 
 let pattern = g
   .append("pattern")
@@ -33,77 +37,83 @@ let pattern = g
 let gridPath = pattern
   .append("path")
   .attr("d", `M ${gridDensity} 0 L 0 0 0 ${gridDensity}`)
-  .attr("class", "areaGridLines");
+  .attr("class", "gridInnerLines");
 
 let borderPath = g
   .append("path")
-  .attr("d", `M ${point0} L ${point1} L ${point2} L ${point3} Z`)
-  .attr("class", "areaBorder");
+  .attr(
+    "d",
+    `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
+  )
+  .attr("class", "gridBorder");
 
-controlPoints.forEach(function (point, index) {
-  let areaPoint = g.append("circle");
-  areaPoint
-    .attr("class", "areaPoint")
-    .attr("id", `point${index}`)
-    .attr("cx", point[0])
-    .attr("cy", point[1])
+controlPoints.forEach(function (controlPoint, index) {
+  g.append("circle")
+    .attr("class", "controlCircle")
+    .attr("id", `circle${index}`)
+    .attr("cx", controlPoint[0])
+    .attr("cy", controlPoint[1])
     .attr("r", pointRadius);
 });
 
-// select circles around points
-let circle0 = d3.select("#point0").node();
-let circle1 = d3.select("#point1").node();
-let circle2 = d3.select("#point2").node();
-let circle3 = d3.select("#point3").node();
+// select control circles
+let circle0 = d3.select("#circle0").node();
+let circle1 = d3.select("#circle1").node();
+let circle2 = d3.select("#circle2").node();
+let circle3 = d3.select("#circle3").node();
 
 let circles = [circle0, circle1, circle2, circle3];
 
+// add event listeners mousedown to control circles
 circles.forEach(function (circle) {
-  circle.addEventListener("mousedown", function () {
+  circle.addEventListener("mousedown", function (event) {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
   });
 });
 
 let mousemove = function (event) {
-  let mouseX = event.clientX - 7;
-  let mouseY = event.clientY - 7;
-  //update border coordinates
-  if (event.target.id === "point0") {
+  document.removeEventListener("mouseup", mouseup);
+
+  let mouseX = event.clientX;
+  let mouseY = event.clientY;
+
+  // update border coordinates
+  if (event.target.id === "circle0") {
     borderCoordinates.x1 = mouseX;
     borderCoordinates.y1 = mouseY;
-  } else if (event.target.id === "point1") {
+  } else if (event.target.id === "circle1") {
     borderCoordinates.x2 = mouseX;
     borderCoordinates.y1 = mouseY;
-  } else if (event.target.id === "point2") {
+  } else if (event.target.id === "circle2") {
     borderCoordinates.x2 = mouseX;
+    borderCoordinates.y2 = mouseY;
+  } else if (event.target.id === "circle3") {
+    borderCoordinates.x1 = mouseX;
     borderCoordinates.y2 = mouseY;
   } else {
-    borderCoordinates.x1 = mouseX;
-    borderCoordinates.y2 = mouseY;
+    console.log("invalid event target: " + event.target.id);
   }
 
-  //update point coordinates
-  point0 = [borderCoordinates.x1, borderCoordinates.y1];
-  point1 = [borderCoordinates.x2, borderCoordinates.y1];
-  point2 = [borderCoordinates.x2, borderCoordinates.y2];
-  point3 = [borderCoordinates.x1, borderCoordinates.y2];
+  // update control point coordinates
+  controlPoint0 = [borderCoordinates.x1, borderCoordinates.y1];
+  controlPoint1 = [borderCoordinates.x2, borderCoordinates.y1];
+  controlPoint2 = [borderCoordinates.x2, borderCoordinates.y2];
+  controlPoint3 = [borderCoordinates.x1, borderCoordinates.y2];
 
-  //redraw border
-  borderPath.attr("d", `M ${point0} L ${point1} L ${point2} L ${point3} Z`);
+  controlPoints = [controlPoint0, controlPoint1, controlPoint2, controlPoint3];
 
-  //redraw points
-  circle0.setAttribute("cx", point0[0]);
-  circle0.setAttribute("cy", point0[1]);
+  // redraw border
+  borderPath.attr(
+    "d",
+    `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
+  );
 
-  circle1.setAttribute("cx", point1[0]);
-  circle1.setAttribute("cy", point1[1]);
-
-  circle2.setAttribute("cx", point2[0]);
-  circle2.setAttribute("cy", point2[1]);
-
-  circle3.setAttribute("cx", point3[0]);
-  circle3.setAttribute("cy", point3[1]);
+  // redraw points
+  circles.forEach(function (circle, index) {
+    circle.setAttribute("cx", controlPoints[index][0]);
+    circle.setAttribute("cy", controlPoints[index][1]);
+  });
 
   document.addEventListener("mouseup", mouseup);
 };
