@@ -1,5 +1,5 @@
 // initialize variables
-const pointRadius = 4;
+const pointRadius = 6;
 
 let gridDensity = 10;
 
@@ -64,9 +64,20 @@ let circle3 = d3.select("#circle3").node();
 
 let circles = [circle0, circle1, circle2, circle3];
 
+// define function to translate coordinates from DOM to svg
+let screenToSvgCoords = function (svg, event) {
+  let svgRect = svg.getBoundingClientRect();
+  let x = event.clientX - svgRect.x;
+  let y = event.clientY - svgRect.y;
+  return {
+    X: x,
+    Y: y,
+  };
+};
+
 // add event listeners mousedown to control circles
 circles.forEach(function (circle) {
-  circle.addEventListener("mousedown", function (event) {
+  circle.addEventListener("mousedown", function () {
     document.addEventListener("mousemove", mousemove);
     document.addEventListener("mouseup", mouseup);
   });
@@ -75,8 +86,10 @@ circles.forEach(function (circle) {
 let mousemove = function (event) {
   document.removeEventListener("mouseup", mouseup);
 
-  let mouseX = event.clientX;
-  let mouseY = event.clientY;
+  let area = areaDefinitionSvg.node();
+
+  let mouseX = screenToSvgCoords(area, event).X;
+  let mouseY = screenToSvgCoords(area, event).Y;
 
   // update border coordinates
   if (event.target.id === "circle0") {
