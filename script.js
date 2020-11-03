@@ -30,7 +30,7 @@ let circle0;
 let circle1;
 let circle2;
 let circle3;
-let circles = [circle0, circle1, circle2, circle3];
+let circles = [];
 
 // create svg content
 const areaDefinitionSvg = d3.select("#areaDefinitionSvg");
@@ -64,7 +64,7 @@ function initialGrid() {
       "d",
       `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
     )
-    .attr("class", "gridBorder");
+    .attr("id", "gridBorder");
 
   controlPoints.forEach(function (controlPoint, index) {
     g.append("circle")
@@ -91,6 +91,22 @@ function createEventListeners() {
   // add wheel event listener
   document.addEventListener("wheel", changeGridDensity);
 
+  // add mousedown listener for whole grid to move
+  let grid = document.getElementById("gridBorder");
+  grid.classList.add("grab");
+  grid.addEventListener("mousedown", function (event) {
+    grid.classList.add("grabbing");
+    let mouseX = screenToSvgCoords(event).X;
+    let mouseY = screenToSvgCoords(event).Y;
+    pointCoordinates = {
+      X: mouseX,
+      Y: mouseY,
+    };
+    document.removeEventListener("wheel", changeGridDensity);
+    document.addEventListener("mousemove", moveGrid);
+    document.addEventListener("mouseup", mouseup);
+  });
+
   // add event listener mousedown to circles
   circles.forEach(function (circle) {
     circle.addEventListener("mousedown", function (event) {
@@ -116,7 +132,7 @@ function mousemove(event) {
   let mouseX = screenToSvgCoords(event).X;
   let mouseY = screenToSvgCoords(event).Y;
 
-  let currentCoordinates = {
+  currentCoordinates = {
     X: mouseX,
     Y: mouseY,
   };
@@ -151,7 +167,9 @@ function mouseup() {
   activePointId = "";
   document.removeEventListener("mousemove", mousemove);
   document.removeEventListener("mouseup", mouseup);
+  document.removeEventListener("mousemove", moveGrid);
   document.addEventListener("wheel", changeGridDensity);
+  document.getElementById("gridBorder").classList.remove("grabbing");
 }
 
 // define screenToSvgCoords function to translate coordinates from DOM to svg
@@ -242,4 +260,46 @@ function changeGridDensity(event) {
 
   pointCoordinates = {};
   activePointId = "";
+}
+
+function moveGrid(event) {
+  let mouseX = screenToSvgCoords(event).X;
+  let mouseY = screenToSvgCoords(event).Y;
+  currentCoordinates = {
+    X: mouseX,
+    Y: mouseY,
+  };
+  let diffX = pointCoordinates.X - currentCoordinates.X;
+  let diffY = pointCoordinates.Y - currentCoordinates.Y;
+  // update variables
+  borderCoordinates.x1 -= diffX;
+  borderCoordinates.x2 -= diffX;
+  borderCoordinates.y1 -= diffY;
+  borderCoordinates.y2 -= diffY;
+  // update control point coordinates
+  controlPoint0 = [borderCoordinates.x1, borderCoordinates.y1];
+  controlPoint1 = [borderCoordinates.x2, borderCoordinates.y1];
+  controlPoint2 = [borderCoordinates.x2, borderCoordinates.y2];
+  controlPoint3 = [borderCoordinates.x1, borderCoordinates.y2];
+
+  controlPoints = [controlPoint0, controlPoint1, controlPoint2, controlPoint3];
+
+  // redraw border
+  borderPath.attr(
+    "d",
+    `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
+  );
+
+  //set grid origin
+  pattern.attr("x", controlPoint0[0]).attr("y", controlPoint0[1]);
+
+  // redraw points
+  circles.forEach(function (circle, index) {
+    circle.setAttribute("cx", controlPoints[index][0]);
+    circle.setAttribute("cy", controlPoints[index][1]);
+  });
+
+  pointCoordinates = currentCoordinates;
+
+  document.addEventListener("mouseup", mouseup);
 }
