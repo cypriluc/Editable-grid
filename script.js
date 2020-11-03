@@ -90,10 +90,8 @@ function initialGrid() {
 function createEventListeners() {
   // add wheel event listener
   document.addEventListener("wheel", changeGridDensity);
-
   // add mousedown listener for whole grid to move
   let grid = document.getElementById("gridBorder");
-  grid.classList.add("grab");
   grid.addEventListener("mousedown", function (event) {
     grid.classList.add("grabbing");
     let mouseX = screenToSvgCoords(event).X;
@@ -106,7 +104,6 @@ function createEventListeners() {
     document.addEventListener("mousemove", moveGrid);
     document.addEventListener("mouseup", mouseup);
   });
-
   // add event listener mousedown to circles
   circles.forEach(function (circle) {
     circle.addEventListener("mousedown", function (event) {
@@ -129,15 +126,8 @@ function createEventListeners() {
 
 // define mousemove function
 function mousemove(event) {
-  let mouseX = screenToSvgCoords(event).X;
-  let mouseY = screenToSvgCoords(event).Y;
-
-  currentCoordinates = {
-    X: mouseX,
-    Y: mouseY,
-  };
-
-  // if point coordinates and current coordinates distance is bigger then grid field (/half of it?) -> update point coordinates
+  setCurrentCoordinates(event);
+  // if point coordinates and current coordinates distance is bigger then half of the grid cell -> update point coordinates
   let diffX = Math.abs(pointCoordinates.X - currentCoordinates.X);
   let diffY = Math.abs(pointCoordinates.Y - currentCoordinates.Y);
 
@@ -200,29 +190,8 @@ function updateGrid(x, y) {
   } else {
     console.log("Error: point not selected");
   }
-
-  // update control point coordinates
-  controlPoint0 = [borderCoordinates.x1, borderCoordinates.y1];
-  controlPoint1 = [borderCoordinates.x2, borderCoordinates.y1];
-  controlPoint2 = [borderCoordinates.x2, borderCoordinates.y2];
-  controlPoint3 = [borderCoordinates.x1, borderCoordinates.y2];
-
-  controlPoints = [controlPoint0, controlPoint1, controlPoint2, controlPoint3];
-
-  // redraw border
-  borderPath.attr(
-    "d",
-    `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
-  );
-
-  //set grid origin
-  pattern.attr("x", controlPoint0[0]).attr("y", controlPoint0[1]);
-
-  // redraw points
-  circles.forEach(function (circle, index) {
-    circle.setAttribute("cx", controlPoints[index][0]);
-    circle.setAttribute("cy", controlPoints[index][1]);
-  });
+  updateControlPoints();
+  redrawGrid();
 }
 
 // define change Grid density function listening to wheel event
@@ -263,12 +232,7 @@ function changeGridDensity(event) {
 }
 
 function moveGrid(event) {
-  let mouseX = screenToSvgCoords(event).X;
-  let mouseY = screenToSvgCoords(event).Y;
-  currentCoordinates = {
-    X: mouseX,
-    Y: mouseY,
-  };
+  setCurrentCoordinates(event);
   let diffX = pointCoordinates.X - currentCoordinates.X;
   let diffY = pointCoordinates.Y - currentCoordinates.Y;
   // update variables
@@ -276,30 +240,42 @@ function moveGrid(event) {
   borderCoordinates.x2 -= diffX;
   borderCoordinates.y1 -= diffY;
   borderCoordinates.y2 -= diffY;
-  // update control point coordinates
+
+  updateControlPoints();
+  redrawGrid();
+
+  pointCoordinates = currentCoordinates;
+  document.addEventListener("mouseup", mouseup);
+}
+
+function updateControlPoints() {
   controlPoint0 = [borderCoordinates.x1, borderCoordinates.y1];
   controlPoint1 = [borderCoordinates.x2, borderCoordinates.y1];
   controlPoint2 = [borderCoordinates.x2, borderCoordinates.y2];
   controlPoint3 = [borderCoordinates.x1, borderCoordinates.y2];
-
   controlPoints = [controlPoint0, controlPoint1, controlPoint2, controlPoint3];
+}
 
+function redrawGrid() {
   // redraw border
   borderPath.attr(
     "d",
     `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
   );
-
   //set grid origin
   pattern.attr("x", controlPoint0[0]).attr("y", controlPoint0[1]);
-
   // redraw points
   circles.forEach(function (circle, index) {
     circle.setAttribute("cx", controlPoints[index][0]);
     circle.setAttribute("cy", controlPoints[index][1]);
   });
+}
 
-  pointCoordinates = currentCoordinates;
-
-  document.addEventListener("mouseup", mouseup);
+function setCurrentCoordinates(event) {
+  let mouseX = screenToSvgCoords(event).X;
+  let mouseY = screenToSvgCoords(event).Y;
+  currentCoordinates = {
+    X: mouseX,
+    Y: mouseY,
+  };
 }
