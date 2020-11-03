@@ -1,4 +1,4 @@
-// initialize variables
+// initialize global variables and assign default values
 const pointRadius = 6;
 
 let gridDensity = 10;
@@ -26,74 +26,90 @@ let controlPoints = [
 let currentCoordinates = {};
 let pointCoordinates = {};
 let activePointId = "";
+let circle0;
+let circle1;
+let circle2;
+let circle3;
+let circles = [circle0, circle1, circle2, circle3];
 
-// create default svg with initial values
+// create svg content
 const areaDefinitionSvg = d3.select("#areaDefinitionSvg");
 const area = areaDefinitionSvg.node();
 const svgRect = area.getBoundingClientRect();
 
 let g = areaDefinitionSvg.append("g");
+let pattern = g.append("pattern");
+let gridPath = pattern.append("path");
+let borderPath = g.append("path");
 
-let pattern = g
-  .append("pattern")
-  .attr("id", "grid")
-  .attr("width", gridDensity)
-  .attr("height", gridDensity)
-  .attr("x", controlPoint0[0])
-  .attr("y", controlPoint0[1])
-  .attr("patternUnits", "userSpaceOnUse");
+// define function initialGrid to draw initial svg on clicking the button
+function initialGrid() {
+  // disable button
+  document.getElementById("defineArea").disabled = true;
+  // assign svg attributes
+  pattern
+    .attr("id", "grid")
+    .attr("width", gridDensity)
+    .attr("height", gridDensity)
+    .attr("x", controlPoint0[0])
+    .attr("y", controlPoint0[1])
+    .attr("patternUnits", "userSpaceOnUse");
 
-let gridPath = pattern
-  .append("path")
-  .attr("d", `M ${gridDensity} 0 L 0 0 0 ${gridDensity}`)
-  .attr("class", "gridInnerLines");
+  gridPath
+    .attr("d", `M ${gridDensity} 0 L 0 0 0 ${gridDensity}`)
+    .attr("class", "gridInnerLines");
 
-let borderPath = g
-  .append("path")
-  .attr(
-    "d",
-    `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
-  )
-  .attr("class", "gridBorder");
+  borderPath
+    .attr(
+      "d",
+      `M ${controlPoint0} L ${controlPoint1} L ${controlPoint2} L ${controlPoint3} Z`
+    )
+    .attr("class", "gridBorder");
 
-controlPoints.forEach(function (controlPoint, index) {
-  g.append("circle")
-    .attr("class", "controlCircle")
-    .attr("id", `circle${index}`)
-    .attr("cx", controlPoint[0])
-    .attr("cy", controlPoint[1])
-    .attr("r", pointRadius);
-});
-
-// select control circles
-let circle0 = d3.select("#circle0").node();
-let circle1 = d3.select("#circle1").node();
-let circle2 = d3.select("#circle2").node();
-let circle3 = d3.select("#circle3").node();
-
-let circles = [circle0, circle1, circle2, circle3];
-
-// add wheel event listener
-document.addEventListener("wheel", changeGridDensity);
-
-// add event listener mousedown to control circles
-circles.forEach(function (circle) {
-  circle.addEventListener("mousedown", function (event) {
-    document.removeEventListener("wheel", changeGridDensity);
-    // make point coordinates equal to center of targeted event
-    let pointX = event.target.getAttribute("cx");
-    let pointY = event.target.getAttribute("cy");
-    pointCoordinates = {
-      X: pointX,
-      Y: pointY,
-    };
-
-    activePointId = event.target.id;
-
-    document.addEventListener("mousemove", mousemove);
-    document.addEventListener("mouseup", mouseup);
+  controlPoints.forEach(function (controlPoint, index) {
+    g.append("circle")
+      .attr("class", "controlCircle")
+      .attr("id", `circle${index}`)
+      .attr("cx", controlPoint[0])
+      .attr("cy", controlPoint[1])
+      .attr("r", pointRadius);
   });
-});
+
+  // assign control circles
+  circle0 = d3.select("#circle0").node();
+  circle1 = d3.select("#circle1").node();
+  circle2 = d3.select("#circle2").node();
+  circle3 = d3.select("#circle3").node();
+  circles = [circle0, circle1, circle2, circle3];
+
+  // create event listeners
+  createEventListeners();
+}
+
+// define function to create event listeners when svg grid was created
+function createEventListeners() {
+  // add wheel event listener
+  document.addEventListener("wheel", changeGridDensity);
+
+  // add event listener mousedown to control circles
+  circles.forEach(function (circle) {
+    circle.addEventListener("mousedown", function (event) {
+      document.removeEventListener("wheel", changeGridDensity);
+      // make point coordinates equal to center of targeted event
+      let pointX = event.target.getAttribute("cx");
+      let pointY = event.target.getAttribute("cy");
+      pointCoordinates = {
+        X: pointX,
+        Y: pointY,
+      };
+
+      activePointId = event.target.id;
+
+      document.addEventListener("mousemove", mousemove);
+      document.addEventListener("mouseup", mouseup);
+    });
+  });
+}
 
 // define mousemove function
 function mousemove(event) {
