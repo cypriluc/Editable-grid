@@ -91,7 +91,7 @@ function createEventListeners() {
   // add wheel event listener
   document.addEventListener("wheel", changeGridDensity);
 
-  // add event listener mousedown to control circles
+  // add event listener mousedown to circles
   circles.forEach(function (circle) {
     circle.addEventListener("mousedown", function (event) {
       document.removeEventListener("wheel", changeGridDensity);
@@ -127,8 +127,18 @@ function mousemove(event) {
 
   if (diffX >= gridDensity / 2 || diffY >= gridDensity / 2) {
     pointCoordinates = {
-      X: Math.round(currentCoordinates.X / gridDensity) * gridDensity,
-      Y: Math.round(currentCoordinates.Y / gridDensity) * gridDensity,
+      X:
+        Math.round(
+          (currentCoordinates.X - borderCoordinates.x1) / gridDensity
+        ) *
+          gridDensity +
+        borderCoordinates.x1,
+      Y:
+        Math.round(
+          (currentCoordinates.Y - borderCoordinates.y1) / gridDensity
+        ) *
+          gridDensity +
+        borderCoordinates.y1,
     };
     updateGrid(pointCoordinates.X, pointCoordinates.Y);
   }
@@ -229,4 +239,7 @@ function changeGridDensity(event) {
   }
 
   updateGrid(pointCoordinates.X, pointCoordinates.Y);
+
+  pointCoordinates = {};
+  activePointId = "";
 }
